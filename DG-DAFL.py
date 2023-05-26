@@ -143,13 +143,15 @@ for epoch in range(opt.n_epochs):
 
         z1 = Variable(torch.randn(opt.batch_size, opt.latent_dim)).cuda()
         z2 = Variable(torch.randn(opt.batch_size, opt.latent_dim)).cuda()
-        z3 = Variable(torch.randn(opt.batch_size, opt.latent_dim)).cuda()
-        z4 = Variable(torch.randn(opt.batch_size, opt.latent_dim)).cuda()
+
 
 
         img_t = generator_t(z1)
         img_s = generator_s(z2)
-
+        
+        x1 = img_s.detach()
+        x2 = img_t.detach()
+        
 
 
         # 优化Gt
@@ -173,7 +175,7 @@ for epoch in range(opt.n_epochs):
         img_s2 = generator_s(z4)
         # 优化Gs
         optimizer_Gs.zero_grad()
-        loss_kl = klloss(img_s2, img_t2)
+        loss_kl = klloss(x1,x2)
         outputs_S, features_S = net(img_s, out_feature=True)
         pred_S = outputs_S.data.max(1)[1]
         loss_activation_S = -features_S.abs().mean()
