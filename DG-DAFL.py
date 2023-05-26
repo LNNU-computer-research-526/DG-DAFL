@@ -143,16 +143,14 @@ for epoch in range(opt.n_epochs):
 
         z1 = Variable(torch.randn(opt.batch_size, opt.latent_dim)).cuda()
         z2 = Variable(torch.randn(opt.batch_size, opt.latent_dim)).cuda()
+        z3 = Variable(torch.randn(opt.batch_size, opt.latent_dim)).cuda()
+        z4 = Variable(torch.randn(opt.batch_size, opt.latent_dim)).cuda()
 
 
         img_t = generator_t(z1)
         img_s = generator_s(z2)
 
-        x1 = img_s.detach()
-        x2 = img_t.detach()
 
-        x1 = x1.requires_grad_()
-        x2 = x2.requires_grad_()
 
         # 优化Gt
         optimizer_Gt.zero_grad()
@@ -167,19 +165,22 @@ for epoch in range(opt.n_epochs):
         optimizer_Gt.step()
         # 优化Ds
         optimizer_Ds.zero_grad()
-        loss_kd = kdloss(net(x1), teacher(x1))
+        loss_kd = kdloss(net(imgs_detach.()), teacher(img_s.detach()))
         loss_kd.backward()
         optimizer_Ds.step()
+        
+        img_t2 = generator_t(z3)
+        img_s2 = generator_s(z4)
         # 优化Gs
         optimizer_Gs.zero_grad()
-        loss_kl = klloss(x1, x2)
+        loss_kl = klloss(img_s2, img_t2)
         outputs_S, features_S = net(img_s, out_feature=True)
         pred_S = outputs_S.data.max(1)[1]
         loss_activation_S = -features_S.abs().mean()
         loss_one_hot_S = criterion(outputs_S, pred_S)
         softmax_o_S = torch.nn.functional.softmax(outputs_S, dim=1).mean(dim=0)
         loss_information_entropy_S = (softmax_o_S * torch.log10(softmax_o_S)).sum()
-        loss_S = loss_one_hot_S * opt.oh + loss_information_entropy_S * opt.ie + loss_activation_S * opt.a
+        loss_S = loss_one_hot_S * opt.oh + loss_information_entropy_S * opt.ie + loss_activation_S * opt.a + loss_kl* opt.kl
 
 
         loss_S.backward()
